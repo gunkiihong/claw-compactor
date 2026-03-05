@@ -8,3 +8,6 @@ build/
 .codebook.json
 .observed-sessions.json
 *.compressed.md
+.env
+memory/
+*.log

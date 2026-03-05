@@ -9,6 +9,7 @@ Commands:
     ingest    --thread <id> --input <f>   Import messages from JSON/JSONL file
     context   --thread <id>               Print injectable context string
     daemon    --thread <id>               Stdin daemon: read JSONL messages, auto-compress
+    auto      [--daemon] [--dry-run]      Multi-channel auto-runner (uses engram.yaml)
 
 Usage:
     python3 scripts/engram_cli.py <workspace> <command> [options]
@@ -29,6 +30,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from lib.engram import EngramEngine
+from lib.config import load_engram_config, engram_engine_kwargs
 from lib.tokens import estimate_tokens
 
 
@@ -194,6 +196,44 @@ def cmd_context(engine: EngramEngine, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_auto(engine: EngramEngine, args: argparse.Namespace) -> int:
+    """
+    Multi-channel auto-runner: scan sessions, detect channels, ingest concurrently.
+
+    Delegates to engram_auto.EngramAutoRunner using the config from engram.yaml.
+    The *engine* argument is unused here (auto-runner builds its own per-thread engines).
+    """
+    from engram_auto import EngramAutoRunner
+    from lib.config import load_engram_config
+
+    cfg_path = getattr(args, "config", None)
+    if cfg_path:
+        cfg_path = Path(cfg_path).expanduser()
+    engram_cfg = load_engram_config(cfg_path)
+
+    workspace = Path(args.workspace)
+
+    runner = EngramAutoRunner(
+        workspace=workspace,
+        engram_cfg=engram_cfg,
+        dry_run=getattr(args, "dry_run", False),
+    )
+
+    if getattr(args, "daemon", False):
+        interval = getattr(args, "interval", 900)
+        runner.run_daemon(interval_seconds=interval)
+        return 0  # unreachable but satisfies type checker
+
+    totals = runner.run_once()
+    if totals:
+        print("Ingestion summary:")
+        for tid, count in sorted(totals.items()):
+            print(f"  {tid}: {count} messages")
+    else:
+        print("Nothing to ingest (all sessions up to date).")
+    return 0
+
+
 def cmd_daemon(engine: EngramEngine, args: argparse.Namespace) -> int:
     """
     Daemon mode — read JSONL messages from stdin and auto-compress in real-time.
@@ -297,12 +337,28 @@ def cmd_daemon(engine: EngramEngine, args: argparse.Namespace) -> int:
 # ---------------------------------------------------------------------------
 
 def _make_engine(workspace: Path, args: argparse.Namespace) -> EngramEngine:
-    """Construct an EngramEngine from CLI args and environment."""
-    return EngramEngine(
-        workspace_path=workspace,
-        observer_threshold=getattr(args, "observer_threshold", DEFAULT_OBSERVER_THRESHOLD),
-        reflector_threshold=getattr(args, "reflector_threshold", DEFAULT_REFLECTOR_THRESHOLD),
-    )
+    """Construct an EngramEngine from CLI args, engram.yaml, and environment.
+
+    Priority: CLI args > engram.yaml > env vars > .env file > built-in defaults.
+    """
+    # Load unified config (handles .env, yaml, env-var overrides internally)
+    cfg_path = getattr(args, "config", None)
+    if cfg_path:
+        cfg_path = Path(cfg_path).expanduser()
+    engram_cfg = load_engram_config(cfg_path)
+    kwargs = engram_engine_kwargs(engram_cfg)
+
+    # CLI threshold args override config (only if explicitly set by user)
+    if getattr(args, "observer_threshold", None) is not None:
+        arg_ot = args.observer_threshold
+        if arg_ot != DEFAULT_OBSERVER_THRESHOLD:
+            kwargs["observer_threshold"] = arg_ot
+    if getattr(args, "reflector_threshold", None) is not None:
+        arg_rt = args.reflector_threshold
+        if arg_rt != DEFAULT_REFLECTOR_THRESHOLD:
+            kwargs["reflector_threshold"] = arg_rt
+
+    return EngramEngine(workspace_path=workspace, **kwargs)
 
 
 # Import defaults so _make_engine can reference them
@@ -316,6 +372,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("workspace", help="Workspace root directory")
     parser.add_argument("-v", "--verbose", action="store_true", help="Debug logging")
+    parser.add_argument(
+        "--config",
+        default=None,
+        help="Path to engram.yaml / engram.json config file",
+    )
 
     sub = parser.add_subparsers(dest="command")
     sub.required = True
@@ -356,6 +417,24 @@ def build_parser() -> argparse.ArgumentParser:
     p_daemon.add_argument("--thread", required=True)
     p_daemon.add_argument("--quiet", action="store_true")
 
+    # --- auto subcommand ---
+    p_auto = sub.add_parser(
+        "auto",
+        help="Multi-channel auto-runner (reads engram.yaml, processes sessions concurrently)",
+    )
+    p_auto.add_argument(
+        "--daemon", action="store_true",
+        help="Run continuously (default interval: 15 min)",
+    )
+    p_auto.add_argument(
+        "--interval", type=int, default=900,
+        help="Daemon interval in seconds (default: 900)",
+    )
+    p_auto.add_argument(
+        "--dry-run", action="store_true", dest="dry_run",
+        help="Detect channels and convert but do not ingest",
+    )
+
     return parser
 
 
@@ -382,6 +461,7 @@ def main() -> None:
         "ingest": cmd_ingest,
         "context": cmd_context,
         "daemon": cmd_daemon,
+        "auto": cmd_auto,
     }
 
     handler = handlers[args.command]

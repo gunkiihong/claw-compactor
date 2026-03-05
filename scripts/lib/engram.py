@@ -143,11 +143,14 @@ class EngramEngine:
             or os.environ.get("OPENAI_BASE_URL", "https://api.openai.com")
         )
 
-        # Model selection
+        # Model selection (explicit arg > config > ENGRAM_MODEL env > provider default)
+        _env_model = os.environ.get("ENGRAM_MODEL", "")
         if model:
             self.model = model
         elif cfg.get("model"):
             self.model = cfg["model"]
+        elif _env_model:
+            self.model = _env_model
         elif self.anthropic_api_key:
             self.model = cfg.get("anthropic_model", DEFAULT_MODEL_ANTHROPIC)
         else:
