@@ -1,5 +1,7 @@
 # Claw Compactor — LLM Token Compression & Context Reduction Tool
 
+![Claw Compactor Banner](assets/banner.png)
+
 [![Build](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/aeromomo/claw-compactor)
 [![Tests](https://img.shields.io/badge/tests-848%20passed-brightgreen)](https://github.com/aeromomo/claw-compactor)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
