@@ -54,7 +54,7 @@ Changelog = "https://github.com/aeromomo/claw-compactor/releases"
 
 [project.optional-dependencies]
 accurate = ["tiktoken>=0.5.0"]
-dev = ["pytest>=7.0"]
+dev = ["pytest>=7.0", "pyyaml>=6.0"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
