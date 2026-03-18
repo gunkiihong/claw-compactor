@@ -2,7 +2,7 @@
 
 ## Overview
 
-Claw Compactor is a 14-stage Fusion Pipeline for LLM token compression. It operates on raw text or structured chat messages, applies a sequence of specialized compression stages, and produces output that is semantically equivalent but substantially smaller — achieving a weighted average of **53.9% token reduction** across real-world workloads.
+Claw Compactor is a 14-stage Fusion Pipeline for LLM token compression. It operates on raw text or structured chat messages, applies a sequence of specialized compression stages, and produces output that is semantically equivalent but substantially smaller — achieving **15–82% token reduction** depending on content type (15–25% on source code, up to 82% on structured JSON).
 
 The pipeline is content-aware. An early detection stage (Cortex) identifies the content type and programming language before any compression occurs, ensuring that subsequent stages fire only when appropriate. Each stage is independent, stateless with respect to the pipeline, and operates on an immutable context object. The output of one stage becomes the input of the next.
 
@@ -459,7 +459,7 @@ The pipeline sorts stages by `order` at construction time, so insertion order in
 - **Gate strictly.** A stage that fires on content where it has no effect wastes CPU and can interfere with accurate `bytes_saved` accounting.
 - **Never mutate `ctx`.** Use `dataclasses.replace()` or construct a new object.
 - **Store discarded content in RewindStore** if the stage is lossy. Use `ctx.rewind_store.put(content)` to get a hash, then embed `[[REWIND:sha256:<hash>]]` in the output.
-- **Write tests first.** The test suite (`tests/`) has 1676 tests and a helper fixture `make_context(text, content_type, language)` for constructing `FusionContext` instances in unit tests.
+- **Write tests first.** The test suite (`tests/`) has 1663 tests and a helper fixture `make_context(text, content_type, language)` for constructing `FusionContext` instances in unit tests.
 - **Choose an `order` value** that reflects where the stage logically belongs:
   - 1-9: Pre-processing and classification
   - 10-19: Structural/token normalization
@@ -483,7 +483,7 @@ The following measurements use real-world content. "Old (regex)" refers to the l
 | Agent conversation | 5.7% | 31.0% | 5.4x |
 | Git diff | 6.2% | 15.0% | 2.4x |
 | Search results | 5.3% | 40.7% | 7.7x |
-| Weighted average | 9.2% | 53.9% | 5.9x |
+| Weighted average | 9.2% | 36.3% | 3.9x |
 
 ### Stage Contribution (approximate, Python source)
 

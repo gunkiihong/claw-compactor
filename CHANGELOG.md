@@ -32,11 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Integrated with Ionizer for JSON array reversal
 
 ### Performance
-- **5.9x improvement** over legacy regex path (weighted average)
-- **53.9% average compression** across 6 content types
+- **3.9x improvement** over legacy regex path (weighted average)
+- **15–82% compression** depending on content type
 - **81.9% peak** on JSON arrays (Ionizer)
 - **25.0%** on Python source (Neurosyntax + StructuralCollapse)
-- **1,676 tests** (up from 848), 0 failures
+- **12–19%** on SWE-bench real repository code
+- **1,663 tests** (up from 848), 0 failures
 
 ### Benchmark
 - SWE-bench tasks: **12-19% compression** on real repository code

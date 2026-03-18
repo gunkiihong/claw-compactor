@@ -35,12 +35,12 @@
 ![Claw Compactor Banner](assets/banner.png)
 
 [![CI](https://github.com/open-compress/claw-compactor/actions/workflows/ci.yml/badge.svg)](https://github.com/open-compress/claw-compactor/actions)
-[![Tests](https://img.shields.io/badge/tests-1676%20passed-brightgreen)](https://github.com/open-compress/claw-compactor)
+[![Tests](https://img.shields.io/badge/tests-1663%20passed-brightgreen)](https://github.com/open-compress/claw-compactor)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-purple)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/open-compress/claw-compactor?style=social)](https://github.com/open-compress/claw-compactor)
 
-**54% average compression &middot; Zero LLM inference cost &middot; Reversible &middot; 1676 tests**
+**15–82% compression depending on content &middot; Zero LLM inference cost &middot; Reversible &middot; 1663 tests**
 
 [Architecture](ARCHITECTURE.md) &middot; [Benchmarks](#benchmarks) &middot; [Quick Start](#quick-start) &middot; [API](#api)
 
@@ -98,7 +98,7 @@ Key design principles:
 | Agent conversation | 5.7% | **31.0%** | 5.4x |
 | Git diff | 6.2% | **15.0%** | 2.4x |
 | Search results | 5.3% | **40.7%** | 7.7x |
-| **Weighted average** | **9.2%** | **53.9%** | **5.9x** |
+| **Weighted average** | **9.2%** | **36.3%** | **3.9x** |
 
 ### SWE-bench Real Tasks
 
@@ -125,18 +125,31 @@ Claw Compactor preserves more semantic content at the same compression ratio, wi
 
 ## Quick Start
 
+### Install from PyPI
+
+```bash
+pip install claw-compactor
+```
+
+### Or clone from source
+
 ```bash
 git clone https://github.com/open-compress/claw-compactor.git
 cd claw-compactor
-
-# Benchmark your workspace (non-destructive)
-python3 scripts/mem_compress.py /path/to/workspace benchmark
-
-# Full compression pipeline
-python3 scripts/mem_compress.py /path/to/workspace full
+pip install -e .
 ```
 
-**Requirements:** Python 3.9+. Optional: `pip install tiktoken` for exact token counts.
+### Run
+
+```bash
+# Benchmark your workspace (non-destructive)
+claw-compactor benchmark /path/to/workspace
+
+# Full compression pipeline
+claw-compactor compress /path/to/workspace
+```
+
+**Requirements:** Python 3.9+. Optional: `pip install claw-compactor[accurate]` for exact token counts via tiktoken.
 
 ---
 
@@ -306,7 +319,7 @@ pip install -e ".[dev,accurate]"
 | Fusion stages | 14 |
 | Languages detected | 16 |
 | Required dependencies | 0 |
-| Compression (weighted avg) | 53.9% |
+| Compression (code) | 15–25% |
 | Compression (JSON peak) | 81.9% |
 | ROUGE-L @ 0.3 rate | 0.653 |
 | License | MIT |
