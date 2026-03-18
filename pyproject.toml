@@ -1,6 +1,6 @@
 [project]
 name = "claw-compactor"
-version = "7.0.1"
+version = "7.0.2"
 description = "14-stage Fusion Pipeline for LLM token compression — 15-82% reduction depending on content, zero LLM inference cost, reversible compression, AST-aware code analysis"
 license = "MIT"
 requires-python = ">=3.9"
@@ -68,5 +68,11 @@ testpaths = ["tests"]
 "claw_compactor.fusion" = "scripts/lib/fusion"
 "claw_compactor.rewind" = "scripts/lib/rewind"
 
-[tool.setuptools.packages]
-find = { where = ["."], include = ["claw_compactor*", "benchmark*", "scripts*"] }
+[tool.setuptools]
+packages = [
+    "claw_compactor",
+    "claw_compactor.fusion",
+    "claw_compactor.rewind",
+    "benchmark",
+    "scripts",
+]
