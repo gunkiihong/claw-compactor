@@ -63,7 +63,8 @@ class FusionPipeline:
             total_ms += result.timing_ms
 
             if not result.skipped:
-                current_ctx = current_ctx.evolve(content=result.content)
+                updates = {"content": result.content, **result.context_updates}
+                current_ctx = current_ctx.evolve(**updates)
                 all_markers.extend(result.markers)
                 all_warnings.extend(result.warnings)
                 logger.debug(

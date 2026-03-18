@@ -36,6 +36,9 @@ class FusionResult:
     warnings: list[str] = field(default_factory=list)
     timing_ms: float = 0.0
     skipped: bool = False
+    # Optional overrides applied to FusionContext after this stage runs.
+    # Keys must match FusionContext field names (e.g. content_type, language).
+    context_updates: dict[str, Any] = field(default_factory=dict)
 
 
 class FusionStage(ABC):
@@ -68,4 +71,5 @@ class FusionStage(ABC):
             warnings=result.warnings,
             timing_ms=elapsed,
             skipped=False,
+            context_updates=result.context_updates,
         )
