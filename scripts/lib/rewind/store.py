@@ -1,4 +1,4 @@
-"""SnapBack store: LRU cache for original text, enabling reversible compression.
+"""Rewind store: LRU cache for original text, enabling reversible compression.
 
 Part of claw-compactor. License: MIT.
 """
@@ -19,7 +19,7 @@ class CacheEntry:
     compressed_tokens: int
 
 
-class SnapBackStore:
+class RewindStore:
     """LRU store mapping hash IDs to original text for later retrieval."""
 
     def __init__(self, max_entries: int = 500, ttl_seconds: int = 600):

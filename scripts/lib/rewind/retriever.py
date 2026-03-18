@@ -1,20 +1,20 @@
-"""SnapBack retriever: generates tool definitions and handles retrieval calls.
+"""Rewind retriever: generates tool definitions and handles retrieval calls.
 
 Part of claw-compactor. License: MIT.
 """
 from __future__ import annotations
 from typing import Any
-from .store import SnapBackStore
+from .store import RewindStore
 
 
-TOOL_NAME = "snapback_retrieve"
+TOOL_NAME = "rewind_retrieve"
 TOOL_DESCRIPTION = (
     "Retrieve the original uncompressed content for a compressed section. "
     "Use this when you need more detail from a section marked with a retrieval hash."
 )
 
 
-def snapback_tool_def(provider: str = "openai") -> dict[str, Any]:
+def rewind_tool_def(provider: str = "openai") -> dict[str, Any]:
     """Generate a tool/function definition for the given provider format."""
     params = {
         "type": "object",
@@ -49,8 +49,8 @@ def snapback_tool_def(provider: str = "openai") -> dict[str, Any]:
     }
 
 
-def handle_retrieval(store: SnapBackStore, tool_call: dict[str, Any]) -> dict[str, Any]:
-    """Process a snapback_retrieve tool call and return the result."""
+def handle_rewind(store: RewindStore, tool_call: dict[str, Any]) -> dict[str, Any]:
+    """Process a rewind_retrieve tool call and return the result."""
     args = tool_call.get("arguments", tool_call.get("input", {}))
     if isinstance(args, str):
         import json

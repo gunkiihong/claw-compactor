@@ -1,4 +1,4 @@
-"""SnapBack markers: embed/extract hash references in compressed text.
+"""Rewind markers: embed/extract hash references in compressed text.
 
 Part of claw-compactor. License: MIT.
 """
@@ -21,14 +21,14 @@ class MarkerInfo:
 
 
 def embed_marker(text: str, original_count: int, compressed_count: int, hash_id: str) -> str:
-    """Append a SnapBack retrieval marker to compressed text."""
+    """Append a Rewind retrieval marker to compressed text."""
     item_word = "item" if original_count == 1 else "items"
     marker = f"[{original_count} {item_word} compressed to {compressed_count}. Retrieve: hash={hash_id}]"
     return f"{text}\n{marker}"
 
 
 def extract_markers(text: str) -> list[MarkerInfo]:
-    """Extract all SnapBack markers from text."""
+    """Extract all Rewind markers from text."""
     markers = []
     for match in MARKER_PATTERN.finditer(text):
         markers.append(MarkerInfo(
@@ -41,10 +41,10 @@ def extract_markers(text: str) -> list[MarkerInfo]:
 
 
 def has_markers(text: str) -> bool:
-    """Return True if text contains any SnapBack markers."""
+    """Return True if text contains any Rewind markers."""
     return bool(MARKER_PATTERN.search(text))
 
 
 def strip_markers(text: str) -> str:
-    """Remove all SnapBack markers from text."""
+    """Remove all Rewind markers from text."""
     return MARKER_PATTERN.sub("", text).rstrip()

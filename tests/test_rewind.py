@@ -1,9 +1,9 @@
-"""Tests for SnapBack reversible compression engine.
+"""Tests for Rewind reversible compression engine.
 
-Covers: SnapBackStore, markers (embed/extract/has/strip), and retriever
-(snapback_tool_def, handle_retrieval).
+Covers: RewindStore, markers (embed/extract/has/strip), and retriever
+(rewind_tool_def, handle_rewind).
 
-The retriever module (scripts/lib/snapback/retriever.py) may not yet exist on
+The retriever module (scripts/lib/rewind/retriever.py) may not yet exist on
 disk; those tests import it conditionally and skip gracefully if missing, while
 still testing the store and marker modules which are present.
 """
@@ -16,8 +16,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
-from lib.snapback.store import SnapBackStore
-from lib.snapback.marker import (
+from lib.rewind.store import RewindStore
+from lib.rewind.marker import (
     embed_marker,
     extract_markers,
     has_markers,
@@ -29,59 +29,59 @@ from lib.snapback.marker import (
 # Try to import retriever; skip retriever tests if module is missing
 # ---------------------------------------------------------------------------
 try:
-    from lib.snapback.retriever import snapback_tool_def, handle_retrieval
+    from lib.rewind.retriever import rewind_tool_def, handle_rewind
     _HAS_RETRIEVER = True
 except (ImportError, ModuleNotFoundError):
     _HAS_RETRIEVER = False
 
 requires_retriever = pytest.mark.skipif(
     not _HAS_RETRIEVER,
-    reason="lib/snapback/retriever.py not yet implemented",
+    reason="lib/rewind/retriever.py not yet implemented",
 )
 
 
 # ===========================================================================
-# SnapBackStore
+# RewindStore
 # ===========================================================================
 
-class TestSnapBackStoreBasics:
+class TestRewindStoreBasics:
     def test_store_returns_24_char_hex(self):
-        store = SnapBackStore()
+        store = RewindStore()
         hash_id = store.store("hello world", "hw")
         assert len(hash_id) == 24
         assert all(c in "0123456789abcdef" for c in hash_id)
 
     def test_store_same_content_returns_same_hash(self):
-        store = SnapBackStore()
+        store = RewindStore()
         h1 = store.store("same content", "sc")
         h2 = store.store("same content", "sc")
         assert h1 == h2
 
     def test_store_different_content_different_hash(self):
-        store = SnapBackStore()
+        store = RewindStore()
         h1 = store.store("content A", "cA")
         h2 = store.store("content B", "cB")
         assert h1 != h2
 
     def test_retrieve_returns_original_text(self):
-        store = SnapBackStore()
+        store = RewindStore()
         original = "The quick brown fox jumps over the lazy dog."
         hash_id = store.store(original, "compressed version")
         result = store.retrieve(hash_id)
         assert result == original
 
     def test_retrieve_unknown_hash_returns_none(self):
-        store = SnapBackStore()
+        store = RewindStore()
         result = store.retrieve("a" * 24)
         assert result is None
 
     def test_retrieve_wrong_length_hash_returns_none(self):
-        store = SnapBackStore()
+        store = RewindStore()
         result = store.retrieve("tooshort")
         assert result is None
 
     def test_size_increments_on_store(self):
-        store = SnapBackStore()
+        store = RewindStore()
         assert store.size == 0
         store.store("a", "x")
         assert store.size == 1
@@ -89,38 +89,38 @@ class TestSnapBackStoreBasics:
         assert store.size == 2
 
     def test_size_does_not_grow_for_duplicate_content(self):
-        store = SnapBackStore()
+        store = RewindStore()
         store.store("same", "s")
         store.store("same", "s")
         assert store.size == 1
 
     def test_clear_empties_store(self):
-        store = SnapBackStore()
+        store = RewindStore()
         store.store("hello", "h")
         store.clear()
         assert store.size == 0
 
     def test_store_with_token_counts(self):
-        store = SnapBackStore()
+        store = RewindStore()
         hash_id = store.store("text", "t", original_tokens=10, compressed_tokens=5)
         assert len(hash_id) == 24
         # retrieve still works
         assert store.retrieve(hash_id) == "text"
 
     def test_store_empty_string(self):
-        store = SnapBackStore()
+        store = RewindStore()
         hash_id = store.store("", "")
         assert len(hash_id) == 24
         assert store.retrieve(hash_id) == ""
 
     def test_store_unicode_content(self):
-        store = SnapBackStore()
+        store = RewindStore()
         original = "中文内容 emoji 🎉 日本語テスト"
         hash_id = store.store(original, "compressed")
         assert store.retrieve(hash_id) == original
 
 
-class TestSnapBackStoreTTL:
+class TestRewindStoreTTL:
     def test_retrieve_within_ttl_succeeds(self, monkeypatch):
         base_time = 1000.0
         call_count = [0]
@@ -133,7 +133,7 @@ class TestSnapBackStoreTTL:
             return base_time + 50  # 50s later, TTL=600
 
         monkeypatch.setattr(time, "monotonic", mock_monotonic)
-        store = SnapBackStore(ttl_seconds=600)
+        store = RewindStore(ttl_seconds=600)
         hash_id = store.store("hello", "h")
         result = store.retrieve(hash_id)
         assert result == "hello"
@@ -149,7 +149,7 @@ class TestSnapBackStoreTTL:
             return base_time + 700  # 700s later, TTL=600
 
         monkeypatch.setattr(time, "monotonic", mock_monotonic)
-        store = SnapBackStore(ttl_seconds=600)
+        store = RewindStore(ttl_seconds=600)
         hash_id = store.store("hello", "h")
         result = store.retrieve(hash_id)
         assert result is None
@@ -165,7 +165,7 @@ class TestSnapBackStoreTTL:
             return base_time + 700
 
         monkeypatch.setattr(time, "monotonic", mock_monotonic)
-        store = SnapBackStore(ttl_seconds=600)
+        store = RewindStore(ttl_seconds=600)
         hash_id = store.store("hello", "h")
         store.retrieve(hash_id)  # triggers expiry deletion
         assert store.size == 0
@@ -181,14 +181,14 @@ class TestSnapBackStoreTTL:
             return base_time + 2  # 2s later, TTL=1
 
         monkeypatch.setattr(time, "monotonic", mock_monotonic)
-        store = SnapBackStore(ttl_seconds=1)
+        store = RewindStore(ttl_seconds=1)
         hash_id = store.store("ephemeral", "e")
         assert store.retrieve(hash_id) is None
 
 
-class TestSnapBackStoreLRU:
+class TestRewindStoreLRU:
     def test_lru_eviction_when_max_entries_exceeded(self):
-        store = SnapBackStore(max_entries=3)
+        store = RewindStore(max_entries=3)
         h1 = store.store("first",  "f1")
         h2 = store.store("second", "f2")
         h3 = store.store("third",  "f3")
@@ -199,7 +199,7 @@ class TestSnapBackStoreLRU:
         assert store.retrieve(h1) is None
 
     def test_lru_retains_most_recent_entries(self):
-        store = SnapBackStore(max_entries=3)
+        store = RewindStore(max_entries=3)
         store.store("first",  "f1")
         h2 = store.store("second", "f2")
         h3 = store.store("third",  "f3")
@@ -209,7 +209,7 @@ class TestSnapBackStoreLRU:
         assert store.retrieve(h4) == "fourth"
 
     def test_accessing_entry_refreshes_lru_position(self):
-        store = SnapBackStore(max_entries=3)
+        store = RewindStore(max_entries=3)
         h1 = store.store("first",  "f1")
         store.store("second", "f2")
         store.store("third",  "f3")
@@ -220,16 +220,16 @@ class TestSnapBackStoreLRU:
         assert store.retrieve(h1) == "first"
 
     def test_max_entries_one_keeps_last_only(self):
-        store = SnapBackStore(max_entries=1)
+        store = RewindStore(max_entries=1)
         store.store("first", "f")
         h2 = store.store("second", "s")
         assert store.size == 1
         assert store.retrieve(h2) == "second"
 
 
-class TestSnapBackStoreSearch:
+class TestRewindStoreSearch:
     def test_search_with_matching_keyword_returns_matching_lines(self):
-        store = SnapBackStore()
+        store = RewindStore()
         original = "line one: apple\nline two: banana\nline three: cherry"
         hash_id = store.store(original, "compressed")
         result = store.search(hash_id, ["banana"])
@@ -238,33 +238,33 @@ class TestSnapBackStoreSearch:
         assert "cherry" not in result
 
     def test_search_with_no_keywords_returns_full_original(self):
-        store = SnapBackStore()
+        store = RewindStore()
         original = "line one\nline two\nline three"
         hash_id = store.store(original, "compressed")
         result = store.search(hash_id, [])
         assert result == original
 
     def test_search_case_insensitive(self):
-        store = SnapBackStore()
+        store = RewindStore()
         original = "Deploy on AWS\nSetup Python 3.11"
         hash_id = store.store(original, "c")
         result = store.search(hash_id, ["aws"])
         assert "AWS" in result
 
     def test_search_no_match_returns_full_original(self):
-        store = SnapBackStore()
+        store = RewindStore()
         original = "line one\nline two"
         hash_id = store.store(original, "c")
         result = store.search(hash_id, ["zzznomatch"])
         assert result == original
 
     def test_search_unknown_hash_returns_none(self):
-        store = SnapBackStore()
+        store = RewindStore()
         result = store.search("a" * 24, ["keyword"])
         assert result is None
 
     def test_search_multiple_keywords_returns_union(self):
-        store = SnapBackStore()
+        store = RewindStore()
         original = "apple pie\nbanana split\ncherry cola\ndate cake"
         hash_id = store.store(original, "c")
         result = store.search(hash_id, ["apple", "cherry"])
@@ -273,7 +273,7 @@ class TestSnapBackStoreSearch:
         assert "banana" not in result
 
     def test_search_with_multiline_match(self):
-        store = SnapBackStore()
+        store = RewindStore()
         original = "key: value1\nother: value2\nkey: value3"
         hash_id = store.store(original, "c")
         result = store.search(hash_id, ["key"])
@@ -435,28 +435,28 @@ class TestStripMarkers:
 # ===========================================================================
 
 @requires_retriever
-class TestSnapbackToolDef:
+class TestRewindToolDef:
     def test_openai_format_has_required_keys(self):
-        tool_def = snapback_tool_def(provider="openai")
+        tool_def = rewind_tool_def(provider="openai")
         assert "type" in tool_def
         assert tool_def["type"] == "function"
         assert "function" in tool_def
 
     def test_openai_format_function_has_name(self):
-        tool_def = snapback_tool_def(provider="openai")
+        tool_def = rewind_tool_def(provider="openai")
         fn = tool_def["function"]
         assert "name" in fn
         assert isinstance(fn["name"], str)
         assert len(fn["name"]) > 0
 
     def test_openai_format_function_has_description(self):
-        tool_def = snapback_tool_def(provider="openai")
+        tool_def = rewind_tool_def(provider="openai")
         fn = tool_def["function"]
         assert "description" in fn
         assert isinstance(fn["description"], str)
 
     def test_openai_format_has_parameters(self):
-        tool_def = snapback_tool_def(provider="openai")
+        tool_def = rewind_tool_def(provider="openai")
         fn = tool_def["function"]
         assert "parameters" in fn
         params = fn["parameters"]
@@ -464,42 +464,42 @@ class TestSnapbackToolDef:
         assert "hash_id" in params["properties"]
 
     def test_anthropic_format_has_required_keys(self):
-        tool_def = snapback_tool_def(provider="anthropic")
+        tool_def = rewind_tool_def(provider="anthropic")
         assert "name" in tool_def
         assert "description" in tool_def
         assert "input_schema" in tool_def
 
     def test_anthropic_format_name_is_string(self):
-        tool_def = snapback_tool_def(provider="anthropic")
+        tool_def = rewind_tool_def(provider="anthropic")
         assert isinstance(tool_def["name"], str)
         assert len(tool_def["name"]) > 0
 
     def test_anthropic_format_input_schema_has_hash_id(self):
-        tool_def = snapback_tool_def(provider="anthropic")
+        tool_def = rewind_tool_def(provider="anthropic")
         schema = tool_def["input_schema"]
         assert "properties" in schema
         assert "hash_id" in schema["properties"]
 
     def test_default_provider_is_openai(self):
-        tool_def = snapback_tool_def()
+        tool_def = rewind_tool_def()
         # Default (openai) should return a function-wrapped format
         assert "type" in tool_def
         assert tool_def["type"] == "function"
 
 
 @requires_retriever
-class TestHandleRetrieval:
-    def _make_store_with_content(self, content: str) -> tuple[SnapBackStore, str]:
-        store = SnapBackStore()
+class TestHandleRewind:
+    def _make_store_with_content(self, content: str) -> tuple[RewindStore, str]:
+        store = RewindStore()
         hash_id = store.store(content, "compressed")
         return store, hash_id
 
-    def _call(self, store: SnapBackStore, hash_id: str, keywords: list | None = None) -> dict:
-        """Build a tool_call dict and invoke handle_retrieval."""
+    def _call(self, store: RewindStore, hash_id: str, keywords: list | None = None) -> dict:
+        """Build a tool_call dict and invoke handle_rewind."""
         args: dict = {"hash_id": hash_id}
         if keywords is not None:
             args["keywords"] = keywords
-        return handle_retrieval(store, {"arguments": args})
+        return handle_rewind(store, {"arguments": args})
 
     def test_success_case_returns_original(self):
         original = "Full original text with details."
@@ -509,13 +509,13 @@ class TestHandleRetrieval:
         assert result["content"] == original
 
     def test_not_found_case_returns_not_found_status(self):
-        store = SnapBackStore()
+        store = RewindStore()
         result = self._call(store, "a" * 24)
         assert result["status"] == "not_found"
         assert "message" in result
 
     def test_not_found_message_mentions_hash(self):
-        store = SnapBackStore()
+        store = RewindStore()
         unknown_hash = "b" * 24
         result = self._call(store, unknown_hash)
         assert unknown_hash in result["message"]
@@ -543,18 +543,18 @@ class TestHandleRetrieval:
         assert "returned" in result["content"]
 
     def test_tool_call_with_input_key_anthropic_style(self):
-        """handle_retrieval also accepts Anthropic-style 'input' key."""
+        """handle_rewind also accepts Anthropic-style 'input' key."""
         original = "anthropic style input"
         store, hash_id = self._make_store_with_content(original)
-        result = handle_retrieval(store, {"input": {"hash_id": hash_id}})
+        result = handle_rewind(store, {"input": {"hash_id": hash_id}})
         assert result["status"] == "ok"
         assert result["content"] == original
 
     def test_tool_call_with_json_string_arguments(self):
-        """handle_retrieval handles arguments as a JSON string."""
+        """handle_rewind handles arguments as a JSON string."""
         import json
         original = "json string args"
         store, hash_id = self._make_store_with_content(original)
-        result = handle_retrieval(store, {"arguments": json.dumps({"hash_id": hash_id})})
+        result = handle_rewind(store, {"arguments": json.dumps({"hash_id": hash_id})})
         assert result["status"] == "ok"
         assert result["content"] == original

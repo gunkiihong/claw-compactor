@@ -1,4 +1,4 @@
-"""Transform base classes for Claw Compactor pipeline.
+"""Fusion stage base classes for Claw Compactor pipeline.
 
 Part of claw-compactor. License: MIT.
 """
@@ -10,8 +10,8 @@ from typing import Any
 
 
 @dataclass(frozen=True)
-class CompressContext:
-    """Immutable context passed through the transform pipeline."""
+class FusionContext:
+    """Immutable context passed through the fusion pipeline."""
     content: str
     content_type: str = "text"  # text|code|json|log|diff|search
     language: str | None = None
@@ -21,14 +21,14 @@ class CompressContext:
     query: str | None = None
     metadata: dict = field(default_factory=dict)
 
-    def evolve(self, **kwargs) -> CompressContext:
+    def evolve(self, **kwargs) -> FusionContext:
         """Return a new context with specified fields replaced."""
         return replace(self, **kwargs)
 
 
 @dataclass(frozen=True)
-class TransformResult:
-    """Immutable result from a single transform."""
+class FusionResult:
+    """Immutable result from a single fusion stage."""
     content: str
     original_tokens: int = 0
     compressed_tokens: int = 0
@@ -38,29 +38,29 @@ class TransformResult:
     skipped: bool = False
 
 
-class Transform(ABC):
-    """Base class for all compression transforms."""
+class FusionStage(ABC):
+    """Base class for all compression fusion stages."""
     name: str = "unnamed"
     order: int = 50  # execution order (lower = earlier)
 
     @abstractmethod
-    def should_apply(self, ctx: CompressContext) -> bool:
-        """Return True if this transform should run on the given context."""
+    def should_apply(self, ctx: FusionContext) -> bool:
+        """Return True if this fusion stage should run on the given context."""
         ...
 
     @abstractmethod
-    def apply(self, ctx: CompressContext) -> TransformResult:
-        """Apply the transform and return the result."""
+    def apply(self, ctx: FusionContext) -> FusionResult:
+        """Apply the fusion stage and return the result."""
         ...
 
-    def timed_apply(self, ctx: CompressContext) -> TransformResult:
-        """Apply with timing. Used by Pipeline."""
+    def timed_apply(self, ctx: FusionContext) -> FusionResult:
+        """Apply with timing. Used by FusionPipeline."""
         if not self.should_apply(ctx):
-            return TransformResult(content=ctx.content, skipped=True)
+            return FusionResult(content=ctx.content, skipped=True)
         start = time.monotonic()
         result = self.apply(ctx)
         elapsed = (time.monotonic() - start) * 1000
-        return TransformResult(
+        return FusionResult(
             content=result.content,
             original_tokens=result.original_tokens,
             compressed_tokens=result.compressed_tokens,

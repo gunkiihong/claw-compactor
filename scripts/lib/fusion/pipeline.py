@@ -1,54 +1,54 @@
-"""Pipeline engine: runs a chain of Transforms sequentially.
+"""Fusion pipeline engine: runs a chain of FusionStages sequentially.
 
 Part of claw-compactor. License: MIT.
 """
 from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
-from lib.transforms.base import Transform, CompressContext, TransformResult
+from lib.fusion.base import FusionStage, FusionContext, FusionResult
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class StepResult:
-    """Result from a single pipeline step."""
+class FusionStepResult:
+    """Result from a single fusion pipeline step."""
     transform_name: str
-    result: TransformResult
+    result: FusionResult
 
 
 @dataclass(frozen=True)
-class PipelineResult:
-    """Aggregated result from running all transforms."""
+class FusionPipelineResult:
+    """Aggregated result from running all fusion stages."""
     content: str
-    steps: list[StepResult] = field(default_factory=list)
+    steps: list[FusionStepResult] = field(default_factory=list)
     total_timing_ms: float = 0.0
     markers: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
 
-class Pipeline:
-    """Ordered chain of Transforms."""
+class FusionPipeline:
+    """Ordered chain of FusionStages."""
 
-    def __init__(self, transforms: list[Transform] | None = None):
-        self._transforms: list[Transform] = sorted(
+    def __init__(self, transforms: list[FusionStage] | None = None):
+        self._transforms: list[FusionStage] = sorted(
             transforms or [], key=lambda t: t.order
         )
 
-    def add(self, transform: Transform) -> Pipeline:
-        """Return a new Pipeline with the transform added (immutable)."""
+    def add(self, transform: FusionStage) -> FusionPipeline:
+        """Return a new FusionPipeline with the fusion stage added (immutable)."""
         new_transforms = sorted(
             [*self._transforms, transform], key=lambda t: t.order
         )
-        return Pipeline(new_transforms)
+        return FusionPipeline(new_transforms)
 
     @property
-    def transforms(self) -> list[Transform]:
+    def transforms(self) -> list[FusionStage]:
         return list(self._transforms)
 
-    def run(self, ctx: CompressContext) -> PipelineResult:
-        """Run all transforms sequentially. Each transform's output feeds the next."""
-        steps: list[StepResult] = []
+    def run(self, ctx: FusionContext) -> FusionPipelineResult:
+        """Run all fusion stages sequentially. Each stage's output feeds the next."""
+        steps: list[FusionStepResult] = []
         all_markers: list[str] = []
         all_warnings: list[str] = []
         total_ms = 0.0
@@ -56,7 +56,7 @@ class Pipeline:
 
         for transform in self._transforms:
             result = transform.timed_apply(current_ctx)
-            steps.append(StepResult(
+            steps.append(FusionStepResult(
                 transform_name=transform.name,
                 result=result,
             ))
@@ -76,7 +76,7 @@ class Pipeline:
             else:
                 logger.debug("%s: skipped", transform.name)
 
-        return PipelineResult(
+        return FusionPipelineResult(
             content=current_ctx.content,
             steps=steps,
             total_timing_ms=total_ms,
