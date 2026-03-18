@@ -38,6 +38,8 @@
 [![Tests](https://img.shields.io/badge/tests-1663%20passed-brightgreen)](https://github.com/open-compress/claw-compactor)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-purple)](LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/claw-compactor?color=blue&label=PyPI)](https://pypi.org/project/claw-compactor/)
+[![Downloads](https://img.shields.io/pypi/dm/claw-compactor?color=green&label=downloads)](https://pypi.org/project/claw-compactor/)
 [![Stars](https://img.shields.io/github/stars/open-compress/claw-compactor?style=social)](https://github.com/open-compress/claw-compactor)
 
 **15–82% compression depending on content &middot; Zero LLM inference cost &middot; Reversible &middot; 1663 tests**
