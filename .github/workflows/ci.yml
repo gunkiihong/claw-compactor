@@ -25,6 +25,53 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev,accurate]"
+          pip install pytest-cov
 
-      - name: Run tests
-        run: pytest tests/ -v --tb=short
+      - name: Run tests with coverage
+        run: pytest tests/ -v --tb=short --cov=scripts --cov=claw_compactor --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.12'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Generate test badge data
+        if: matrix.python-version == '3.12' && github.ref == 'refs/heads/main'
+        run: |
+          # Count passed tests from pytest output
+          RESULT=$(pytest tests/ --tb=no -q 2>&1 | tail -1)
+          PASSED=$(echo "$RESULT" | grep -oP '\d+ passed' | grep -oP '\d+' || echo "0")
+          FAILED=$(echo "$RESULT" | grep -oP '\d+ failed' | grep -oP '\d+' || echo "0")
+
+          if [ "$FAILED" = "0" ]; then
+            COLOR="brightgreen"
+            MSG="${PASSED} passed"
+          else
+            COLOR="red"
+            MSG="${PASSED} passed, ${FAILED} failed"
+          fi
+
+          mkdir -p .badges
+          cat > .badges/tests.json << EOF
+          {
+            "schemaVersion": 1,
+            "label": "tests",
+            "message": "$MSG",
+            "color": "$COLOR"
+          }
+          EOF
+
+      - name: Deploy badge to gist
+        if: matrix.python-version == '3.12' && github.ref == 'refs/heads/main'
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_TOKEN }}
+          gistID: ${{ vars.BADGE_GIST_ID }}
+          filename: claw-compactor-tests.json
+          label: tests
+          message: ${{ env.TEST_MSG || 'passing' }}
+          color: ${{ env.TEST_COLOR || 'brightgreen' }}

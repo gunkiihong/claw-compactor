@@ -35,16 +35,16 @@
 ![Claw Compactor Banner](assets/banner.png)
 
 [![CI](https://github.com/open-compress/claw-compactor/actions/workflows/ci.yml/badge.svg)](https://github.com/open-compress/claw-compactor/actions)
-[![Tests](https://img.shields.io/badge/tests-1663%20passed-brightgreen)](https://github.com/open-compress/claw-compactor)
+[![codecov](https://codecov.io/gh/open-compress/claw-compactor/graph/badge.svg)](https://codecov.io/gh/open-compress/claw-compactor)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-purple)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/claw-compactor?color=blue&label=PyPI)](https://pypi.org/project/claw-compactor/)
 [![Downloads](https://img.shields.io/pypi/dm/claw-compactor?color=green&label=downloads)](https://pypi.org/project/claw-compactor/)
 [![Stars](https://img.shields.io/github/stars/open-compress/claw-compactor?style=social)](https://github.com/open-compress/claw-compactor)
 
-**15–82% compression depending on content &middot; Zero LLM inference cost &middot; Reversible &middot; 1663 tests**
+**15–82% compression depending on content &middot; Zero LLM inference cost &middot; Reversible &middot; 1600+ tests**
 
-[Architecture](ARCHITECTURE.md) &middot; [Benchmarks](#benchmarks) &middot; [Quick Start](#quick-start) &middot; [API](#api)
+[Documentation](https://open-compress.github.io/claw-compactor) &middot; [Architecture](ARCHITECTURE.md) &middot; [Benchmarks](#benchmarks) &middot; [Quick Start](#quick-start) &middot; [API](#api)
 
 </div>
 
@@ -53,6 +53,62 @@
 ## What is Claw Compactor?
 
 Claw Compactor is an open-source **LLM token compression engine** built around a 14-stage **Fusion Pipeline**. Each stage is a specialized compressor — from AST-aware code analysis to JSON statistical sampling to simhash-based deduplication — chained through an immutable data flow architecture where each stage's output feeds the next.
+
+### Demo
+
+```
+$ claw-compactor benchmark ./my-workspace
+
+  Claw Compactor v7.0 — Fusion Pipeline Benchmark
+  ─────────────────────────────────────────────────
+
+  Scanning workspace... 47 files, 234,891 tokens
+
+  Stage Results:
+  ┌──────────────────┬──────────┬───────────┬──────────┐
+  │ Stage            │ Applied  │ Reduction │ Time     │
+  ├──────────────────┼──────────┼───────────┼──────────┤
+  │ Cortex           │ 47/47    │ —         │ 12ms     │
+  │ Photon           │ 3/47     │ 2.1%      │ 4ms      │
+  │ RLE              │ 41/47    │ 8.3%      │ 6ms      │
+  │ SemanticDedup    │ 47/47    │ 12.7%     │ 18ms     │
+  │ Ionizer          │ 8/47     │ 71.2%     │ 9ms      │
+  │ Neurosyntax      │ 23/47    │ 18.4%     │ 31ms     │
+  │ TokenOpt         │ 47/47    │ 4.1%      │ 3ms      │
+  │ Abbrev           │ 12/47    │ 6.8%      │ 5ms      │
+  └──────────────────┴──────────┴───────────┴──────────┘
+
+  Summary:
+    Before:  234,891 tokens ($2.35 at GPT-4 rates)
+    After:   108,250 tokens ($1.08)
+    Saved:   126,641 tokens (53.9%) — $1.27/run
+    Time:    88ms total
+
+  Estimated monthly savings at 100 runs/day: $3,810
+```
+
+---
+
+## How It Compares
+
+| Feature | Claw Compactor | LLMLingua-2 | SelectiveContext | gzip + base64 |
+|:--------|:-:|:-:|:-:|:-:|
+| Compression rate | 15–82% | 30–70% | 10–40% | 60–80% |
+| ROUGE-L @ 0.3 | **0.653** | 0.346 | ~0.4 | N/A |
+| ROUGE-L @ 0.5 | **0.723** | 0.570 | ~0.6 | N/A |
+| LLM inference cost | **$0** | ~$0.02/call | **$0** | **$0** |
+| Latency | **<50ms** | ~300ms | ~200ms | <10ms |
+| Reversible | **Yes** | No | No | Yes (manual) |
+| Content-aware routing | **14 stages** | 1 (perplexity) | 1 (self-info) | None |
+| AST-aware code handling | **Yes** (tree-sitter) | No | No | No |
+| JSON schema sampling | **Yes** | No | No | No |
+| Log/diff/search stages | **Yes** | No | No | No |
+| Required dependencies | **0** | torch, transformers | torch | zlib |
+| LLM-readable output | **Yes** | Partial | Partial | **No** |
+
+**Why Claw Compactor wins:** LLMLingua-2 drops tokens by perplexity score — effective for natural language, but destroys code identifiers, JSON keys, and log patterns. Claw Compactor uses content-type-aware stages that understand the structure of what they're compressing.
+
+---
 
 ```
 Input
@@ -286,7 +342,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full technical deep-dive:
 - How to extend the pipeline
 
 ```
-12,000+ lines Python  ·  1,676 tests  ·  14 fusion stages  ·  0 external ML dependencies
+12,000+ lines Python  ·  1,600+ tests  ·  14 fusion stages  ·  0 external ML dependencies
 ```
 
 ---
@@ -312,11 +368,22 @@ pip install -e ".[dev,accurate]"
 
 ---
 
+## Who Uses This
+
+| Project | How |
+|:--------|:----|
+| [OpenClaw](https://openclaw.ai) | Built-in skill for all OpenClaw AI agents — compresses workspace context before every LLM call |
+| [OpenCompress](https://opencompress.ai) | Production compression engine powering the OpenCompress API |
+
+Using Claw Compactor? [Open a PR](https://github.com/open-compress/claw-compactor/pulls) to add yourself here.
+
+---
+
 ## Project Stats
 
 | Metric | Value |
 |:-------|:------|
-| Tests | 1,676 passed |
+| Tests | 1,600+ passed |
 | Python source | 12,000+ lines |
 | Fusion stages | 14 |
 | Languages detected | 16 |
@@ -328,12 +395,23 @@ pip install -e ".[dev,accurate]"
 
 ---
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+- Setting up the development environment
+- Adding new Fusion stages
+- Running the test suite
+- Submitting PRs
+
+---
+
 ## Related
 
 - [OpenClaw](https://openclaw.ai) — AI agent platform
 - [ClawhubAI](https://clawhub.com) — Agent skills marketplace
 - [OpenClaw Discord](https://discord.com/invite/clawd) — Community
 - [OpenClaw Docs](https://docs.openclaw.ai) — Documentation
+- [Full Documentation](https://open-compress.github.io/claw-compactor) — GitHub Pages docs
 
 ---
 

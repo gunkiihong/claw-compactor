@@ -1,0 +1,63 @@
+site_name: Claw Compactor
+site_description: 14-Stage Fusion Pipeline for LLM Token Compression
+site_url: https://open-compress.github.io/claw-compactor
+repo_url: https://github.com/open-compress/claw-compactor
+repo_name: open-compress/claw-compactor
+
+theme:
+  name: material
+  palette:
+    - scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.instant
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - search.highlight
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonitions
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+  - Architecture:
+    - Overview: architecture/overview.md
+    - Fusion Pipeline: architecture/pipeline.md
+    - Stage Reference: architecture/stages.md
+  - Benchmarks: benchmarks.md
+  - API Reference:
+    - FusionEngine: api/engine.md
+    - Stages: api/stages.md
+    - Rewind: api/rewind.md
+  - Contributing: contributing.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/open-compress/claw-compactor
+    - icon: fontawesome/brands/discord
+      link: https://discord.com/invite/clawd
