@@ -280,6 +280,8 @@ class FusionEngine:
             markers     — list of compression marker strings
             warnings    — list of warning strings
         """
+        if not isinstance(text, str):
+            raise TypeError(f"compress() requires a string, got {type(text).__name__}")
         if not text:
             return {
                 "compressed": text,

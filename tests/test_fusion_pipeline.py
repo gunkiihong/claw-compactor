@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Tests for Fusion Pipeline: base classes, FusionContext, FusionResult, and FusionPipeline engine."""
 
 import sys

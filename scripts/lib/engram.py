@@ -386,7 +386,7 @@ class EngramEngine:
             truncated: List[str] = []
             running_tokens = 0
             for line in reversed(lines):
-                line_tokens = estimate_tokens(line)
+                line_tokens = estimate_tokens(line) + 1  # +1 for newline join token
                 if running_tokens + line_tokens > MAX_REFLECTOR_INPUT_TOKENS:
                     break
                 truncated.append(line)

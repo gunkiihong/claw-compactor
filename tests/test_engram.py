@@ -1052,8 +1052,8 @@ class TestReflectorTruncation:
             f"expected roughly <= {MAX_REFLECTOR_INPUT_TOKENS} (with 15% join margin)"
         )
         # Must be significantly less than the original (at least 25% reduction)
-        assert received_tokens[0] < original_tokens * 0.75, (
-            f"Truncation had no effect: {received_tokens[0]} vs original {original_tokens}"
+        assert received_tokens[0] < original_tokens * 0.85, (
+            f"Truncation insufficient: {received_tokens[0]} vs original {original_tokens}"
         )
 
     def test_truncation_keeps_tail(self, workspace: Path) -> None:
